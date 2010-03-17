@@ -13,6 +13,7 @@ How to use
 
 Creating Mooml templates is very easy.
 Make sure your class extends Moomlable, then do following:
+
 	this.register('mytemplate', function(engine)
 	{
 		with(engine)
