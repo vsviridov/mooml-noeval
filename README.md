@@ -114,6 +114,8 @@ Please be aware that using Mooml.globalize() feature will pollute the window obj
 Not want to globalize? Still can run Mooml inline
 -----------------
 
+With version 1.0.15, Mooml is only being used as a mixing, and all template call requires explicit reference to 'engine' parameter. This was done to eliminate eval dependency.
+
 With version 1.0.10, Mooml can be used directly inline to create dom elements:
 
 	var mydiv = Mooml.engine.div({id:'mydiv'}, 'Inline div');
