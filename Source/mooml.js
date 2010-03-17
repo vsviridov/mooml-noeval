@@ -5,15 +5,16 @@ version: 1.0.13
 description: Mooml is a javasctript templating engine for HTML generation, powered by Mootools.
 license: MIT-style
 download: http://mootools.net/forge/p/mooml
-source: http://github.com/eneko/mooml
+source: http://github.com/vsviridov/mooml-noeval
 htmltags: http://www.w3schools.com/html5/html5_reference.asp
-credits: Mooml is based on Ed Spencer's Jaml (http://edspencer.github.com/jaml)
+credits: Mooml-NoEval is based on Eneko Alonso's Mooml. Mooml is based on Ed Spencer's Jaml (http://edspencer.github.com/jaml)
 
 authors:
 - Eneko Alonso (http://enekoalonso.com)
+- Vasili Sviridov (http://vasili.sviridov.ca)
 
 provides:
-- Mooml
+- [Mooml, Moomlable]
 
 requires:
 - core/1.2.4:Class
@@ -22,10 +23,10 @@ requires:
 
 ...
 */
+/*globals Element, Elements, $splat, $each, $type */
 
-Mooml = {
+var Mooml = {
 
-	templates: {},
 	engine: { nodeStack: [] },
 	globalized: false,
 
@@ -58,37 +59,18 @@ Mooml = {
 	],
 
 	/**
-	 * Registers a new template for later use
-	 * @param {String} name The name of the template
-	 * @param {Function} code The code function of the template
-	 */
-	register: function(name, code) {
-		this.templates[name] = function(data) {
-			return this.evaluate(code, data);
-		}.bind(this);
-	},
-
-	/**
-	 * Evaluates a registered template
-	 * @param {String} name The name of the template to evaluate
-	 * @param {Object|Array} data Optional data object or array of objects
-	 */
-	render: function(name, data) {
-		return this.templates[name](data);
-	},
-
-	/**
 	 * Evaluates a Mooml template
 	 * @param {function} code The code function of the template
 	 * @param {Object|Array} data Optional data object or array of objects
+	 * @params {Object} scope Function's 'this' will be replaced with 'scope'
 	 */
-	evaluate: function(code, data) {
+	evaluate: function(code, data, scope) {
 		var elements = [];
 		var nodes = [];
 		this.engine.nodeStack.push(nodes);
 
 		$splat(data || {}).each(function(params, index) {
-			with (this.engine) eval('(' + code + ')(params, index)');
+			code.apply(scope, [this.engine, params, index]);
 			elements.extend(new Elements(nodes.filter(function(node) {
 				return node.getParent() === null;
 			})));
@@ -117,31 +99,34 @@ Mooml = {
 					switch ($type(argument)) {
 						case "array":
 						case "element":
-						case "collection": {
+						case "collection": 
 							el.adopt(argument);
 							break;
-						}
-						case "string": {
-							if (!Mooml.globalized && nodes) {
-								el.getChildren().each(function(child) { nodes.erase(child) });
+						case "string": 
+							if (!Mooml.globalized && nodes)
+							{
+								el.getChildren().each(function(child) { nodes.erase(child); });
 							}
 							el.set('html', el.get('html') + argument);
 							break;
-						}
-						case "number": {
+						case "number": 
 							el.appendText(argument.toString());
 							break;
-						}
-						case "object": {
-							if (index == 0) el.set(argument);
+						case "object": 
+							if (0 === index)
+							{
+								el.set(argument);
+							}
 							break;
-						}
 					}
 				});
 
-				if (!Mooml.globalized && nodes) nodes.push(el);
+				if (!Mooml.globalized && nodes)
+				{
+					nodes.push(el);
+				}
 				return el;
-			}
+			};
 		}.bind(this));
 	},
 
@@ -155,6 +140,31 @@ Mooml = {
 		this.initEngine();
 	}
 
-}
+};
 
 Mooml.initEngine();
+
+var Moomlable =
+{
+	templates: {},
+	/**
+	 * Registers a new template for later use
+	 * @param {String} name The name of the template
+	 * @param {Function} code The code function of the template
+	 */
+	register: function(name, code) {
+		this.templates[name] = function(data, scope) {
+			return this.evaluate(code, data, scope);
+		}.bind(this);
+	},
+
+	/**
+	 * Evaluates a registered template
+	 * @param {String} name The name of the template to evaluate
+	 * @param {Object|Array} data Optional data object or array of objects
+	 * @param {Object} scope Function 'this' scope.
+	 */
+	render: function(name, data, scope) {
+		return this.templates[name](data, scope);
+	}
+};

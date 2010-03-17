@@ -1,5 +1,7 @@
-﻿Mooml
+﻿Mooml-NoEval
 ===========
+
+Mooml-NoEval is a fork of Mooml. Minor changes were introduced so that it doesn't use eval internally. Also, it solves some scoping issues.
 
 Mooml is a port of Jaml. It let's you build html from Javascript using a very nice and clean templating system.
 **Mooml creates the dom elements** in the template, returning a single element if the template has one root or an array of elements if there are multiple roots.
@@ -9,9 +11,11 @@ Mooml is a port of Jaml. It let's you build html from Javascript using a very ni
 How to use
 ----------
 
-Creating Mooml templates is very easy:
-
-	Mooml.register('mytemplate', function() {
+Creating Mooml templates is very easy.
+Make sure your class extends Moomlable, then do following:
+	this.register('mytemplate', function(engine)
+	{
+		with(engine)
 		div({id: 'mydivid'},
 			h2('Title'),
 			p('Lorem Ipsum'),
@@ -29,20 +33,21 @@ This template will generate the following HTML structure, creating the dom eleme
 
 To render the template and generate the dom elements:
 
-	var el = Mooml.render('mytemplate');
+	var el = this.render('mytemplate');
 
 Passing variables to a template can be done easily too:
 
-	Mooml.register('mytemplate', function(params) {
+	this.register('mytemplate', function(engine,params) {
+		with(engine)
 		div({id: params.myDivId}
 			// more code here
 		);
 	});
-	var el = Mooml.render('mytemplate', { myDivId: 'newid' });
+	var el = this.render('mytemplate', { myDivId: 'newid' });
 
 Finally, we can render a template N times by passing an array as argument to the render method:
 
-	var elements = Mooml.render('mytemplate', [
+	var elements = this.render('mytemplate', [
 		{ myDivId: 'div1' },
 		{ myDivId: 'div2' },
 		{ myDivId: 'div3' }
@@ -63,7 +68,8 @@ Evaluating templates on the fly
 
 With Mooml you can evaluate templates without having to register/save them for later reuse.
 
-	Mooml.evaluate(function() {
+	Mooml.evaluate(function(engine) {
+		with(engine)
 		div(
 			p(a({ href: 'http://example.com' }, 'click here'))
 		);
