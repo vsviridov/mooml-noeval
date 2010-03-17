@@ -64,6 +64,28 @@ Will generate:
 	</div>
 
 
+Backreferencing elements
+-----------------
+
+If you need to access one specific DOM element out of the entire template, what do you do:
+
+	this.register('template', function(engine)
+	{
+		with(engine)
+		div(
+			div(
+				div({_ref: 'myDiv'})
+			)
+		)
+	}
+	
+	this.render('template', null, null, function(references)
+	{
+		references[0].myDiv.set('text', 'My DIV');
+	});
+	
+Basically you'll get an array of objects. If you passed multiple sets of parameters to the render method - you will get multiple array elements. Each array element is an object, where keys are strings declares as '_ref' property, and values are corresponding elements.
+
 Evaluating templates on the fly
 -----------------
 
@@ -113,6 +135,8 @@ Please be aware that using Mooml.globalize() feature will pollute the window obj
 
 Not want to globalize? Still can run Mooml inline
 -----------------
+
+With version 1.0.18 you can have quick access to individual template elements, without the need for DOM traversal, or in-advance generation.
 
 With version 1.0.15, Mooml is only being used as a mixing, and all template call requires explicit reference to 'engine' parameter. This was done to eliminate eval dependency.
 

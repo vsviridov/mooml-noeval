@@ -1,7 +1,7 @@
 ﻿/*
 ---
 script: mooml.js
-version: 1.0.17
+version: 1.0.18
 description: Mooml is a javasctript templating engine for HTML generation, powered by Mootools.
 license: MIT-style
 download: http://mootools.net/forge/p/mooml
@@ -59,62 +59,90 @@ var Mooml = {
 	],
 
 	/**
-	 * Evaluates a Mooml template
-	 * @param {function} code The code function of the template
-	 * @param {Object|Array} data Optional data object or array of objects
-	 * @params {Object} scope Function's 'this' will be replaced with 'scope'
-	 */
-	evaluate: function(code, data, scope) {
+	* Evaluates a Mooml template
+	* @param {function} code The code function of the template
+	* @param {Object|Array} data Optional data object or array of objects
+	* @params {Object} scope Function's 'this' will be replaced with 'scope'
+	* @params {Function} ref Callback that will receive registered backreferences as an argument. Bound to 'scope' by default
+	*/
+	evaluate: function(code, data, scope, ref)
+	{
 		var elements = [];
 		var nodes = [];
+		var references = [];
+
 		this.engine.nodeStack.push(nodes);
 
-		$splat(data || {}).each(function(params, index) {
+		$splat(data || {}).each(function(params, index)
+		{
 			code.apply(scope, [this.engine, params, index]);
-			elements.extend(new Elements(nodes.filter(function(node) {
+			elements.extend(new Elements(nodes.filter(function(node)
+			{
 				return node.getParent() === null;
 			})));
-			nodes.empty();
-		}.bind(this));
 
+			references.push(this.engine.ref);
+			delete (this.engine.ref);
+
+			nodes.empty();
+		} .bind(this));
+
+		if (ref)
+		{
+			ref.call(scope, references);
+		}
 		this.engine.nodeStack.pop();
 		return (elements.length > 1) ? elements : elements.shift();
 	},
 
 	/**
-	 * Initializes the engine generating a javascript function for every html
-	 * tag that can be used on the template.
-	 * Template tag functions can receive options for the element, child 
-	 * elements and html code as parameters.
-	 * initEngine can be called by the user in case of adding additional tags.
-	 */
-	initEngine: function() {
-		this.tags.each(function(tag) {
+	* Initializes the engine generating a javascript function for every html
+	* tag that can be used on the template.
+	* Template tag functions can receive options for the element, child 
+	* elements and html code as parameters.
+	* initEngine can be called by the user in case of adding additional tags.
+	*/
+	initEngine: function()
+	{
+		this.tags.each(function(tag)
+		{
 			var owner = (this.globalized) ? window : this.engine;
-			owner[tag] = function() {
-				var nodes = (Mooml.globalized)? null : this.nodeStack.getLast();
+			owner[tag] = function()
+			{
+				var nodes = (Mooml.globalized) ? null : this.nodeStack.getLast();
 				var el = new Element(tag);
 
-				$each(arguments, function(argument, index) {
-					switch ($type(argument)) {
+				$each(arguments, function(argument, index)
+				{
+					switch ($type(argument))
+					{
 						case "array":
 						case "element":
-						case "collection": 
+						case "collection":
 							el.adopt(argument);
 							break;
-						case "string": 
+						case "string":
 							if (!Mooml.globalized && nodes)
 							{
 								el.getChildren().each(function(child) { nodes.erase(child); });
 							}
 							el.set('html', el.get('html') + argument);
 							break;
-						case "number": 
+						case "number":
 							el.appendText(argument.toString());
 							break;
-						case "object": 
+						case "object":
 							if (0 === index)
 							{
+								if ($chk(argument._ref))
+								{
+									if (!$chk(owner.ref))
+									{
+										owner.ref = {};
+									}
+									owner.ref[argument._ref] = el;
+									delete argument._ref;
+								}
 								el.set(argument);
 							}
 							break;
@@ -127,15 +155,16 @@ var Mooml = {
 				}
 				return el;
 			};
-		}.bind(this));
+		} .bind(this));
 	},
 
 	/**
-	 * Makes all template functions available in the global scope of the window object.
-	 * This will polute the global scope creating a new function for every html tag.
-	 * Can be very handy for some websites. Use with discrection.
-	 */
-	globalize: function() {
+	* Makes all template functions available in the global scope of the window object.
+	* This will polute the global scope creating a new function for every html tag.
+	* Can be very handy for some websites. Use with discrection.
+	*/
+	globalize: function()
+	{
 		this.globalized = true;
 		this.initEngine();
 	}
@@ -148,23 +177,27 @@ var Moomlable =
 {
 	templates: {},
 	/**
-	 * Registers a new template for later use
-	 * @param {String} name The name of the template
-	 * @param {Function} code The code function of the template
-	 */
-	register: function(name, code) {
-		this.templates[name] = function(data, scope) {
-			return Mooml.evaluate(code, data, scope);
-		}.bind(this);
+	* Registers a new template for later use
+	* @param {String} name The name of the template
+	* @param {Function} code The code function of the template
+	*/
+	register: function(name, code)
+	{
+		this.templates[name] = function(data, scope, ref)
+		{
+			return Mooml.evaluate(code, data, scope, ref);
+		} .bind(this);
 	},
 
 	/**
-	 * Evaluates a registered template
-	 * @param {String} name The name of the template to evaluate
-	 * @param {Object|Array} data Optional data object or array of objects
-	 * @param {Object} scope Function 'this' scope.
-	 */
-	render: function(name, data, scope) {
-		return this.templates[name](data, scope);
+	* Evaluates a registered template
+	* @param {String} name The name of the template to evaluate
+	* @param {Object|Array} data Optional data object or array of objects
+	* @param {Object} scope Function 'this' scope.
+	* @param {Function} ref Callback function that will receive registered backreferences as an argument. Bound to 'scope' by default
+	*/
+	render: function(name, data, scope, ref)
+	{
+		return this.templates[name](data, scope, ref);
 	}
 };
