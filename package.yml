@@ -1,5 +1,6 @@
 name: Mooml-NoEval
-author: vsviridov
+authors: [eneko, vsviridov]
 category: Native
 tags: [template, html, dom, element]
 current: 1.0.18
+demo: http://vasili.sviridov.ca/mooml/
